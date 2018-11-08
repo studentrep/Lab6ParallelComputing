@@ -1,5 +1,6 @@
 #include "mpi.h"
 #include <stdio.h>
+#include<math.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/times.h>
@@ -22,96 +23,62 @@ int main(int argc, char* argv[])
   double *bb;	/* the B matrix */
   double *cc1;	/* A x B computed using the omp-mpi code you write */
   double *cc2;	/* A x B computed using the conventional algorithm */
- 
-  //changes
-  int aRow, aColumn, bColumn;
-  int numberSent, sender;
-  //
-
   int myid, numprocs;
   double starttime, endtime;
-  MPI_Status status;
   
-  /* insert other global variables here */ //changes
-  double *buffer;
-  int anstype, current_row;
-  // for accumulating the sum
-  double *result;
-  //
+  MPI_Status status;
+  /* insert other global variables here */
   
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   
+  //code from canvas to generate a random matrix
+  if(argc>3)
+  {
+      srand(time(NULL));
+      int numRow=atoi(argv[1]); //number of rows that the random matrix should have
+      int numCol=atoi(argv[2]); //number of columns that the random matrix should have
+      FILE * fp; //pointer to a file (will contain the new generated matrix)
+      fp=fopen(argv[3],"w"); //creates the file
+      fprintf(fp,"rows(%d) cols(%d)\n",numRow,numCol); //writes the size of matrix to the first line of the file 
+      int i,j; 
+      //the for loops generate the random numbers that make up the new matrix's entries
+      for(i=0;i<numRow;i++)
+      {
+          for(j=0;j<numCol;j++)
+          {
+              fprintf(fp,"%f ",(double)rand()/RAND_MAX);
+          }
+      fprintf(fp,"\n"); //print a new line
+      }
+      fclose(fp); //close the new matrix file
+  }
+  
+  // end of code from canvas
+  
   if (argc > 1) {
-    
-    //changes  
-    aRow = atoi(argv[1]);
-    aColumn = atoi(argv[2]);
-    bColumn = atoi(argv[3]);  
-      
-    //nrows = atoi(argv[1]);
-    //ncols = nrows;
-    
-    printf("The matrices' dimensions are %d x %d and %d x %d.\n", aRow, aColumn, aColumn, bColumn);
-
-     // testing if the matrices are generated correctly
-    aa = gen_matrix(a_row, a_col);
-    bb = gen_matrix(a_col, b_col);
-
-    printf("Matrix A:\n");
-    for (int i = 0; i < a_row; i++) {
-      for (int j = 0; j < a_col; j++) {
-        printf("%.1f ", aa[i * a_col + j]);
-      }
-      printf("\n");
-    }
-
-    printf("Matrix B:\n");
-    for (int i = 0; i < a_col; i++) {
-      for (int j = 0; j < b_col; j++) {
-        printf("%.1f ", bb[i * b_col + j]);
-      }
-      printf("\n");
-    }
-    
-    nrows = aRow;
-    ncols = bColumn;
-    buffer = (double *) malloc(sizeof(double) * aColumn);
-    
-    //end changes
-    
+    nrows = atoi(argv[1]);
+    ncols = nrows;
     if (myid == 0) {
       // Master Code goes here
-        
-      //changes
-      //aa = gen_matrix(nrows, ncols);
-      //bb = gen_matrix(ncols, nrows);
-       
-      cc1 = malloc(sizeof(double) * nrows * ncols);
+      aa = gen_matrix(nrows, ncols);
+      bb = gen_matrix(ncols, nrows);
+      cc1 = malloc(sizeof(double) * nrows * nrows); 
       starttime = MPI_Wtime();
-       
-       // number of rows sent
-      numberSent = 0;
-        
-       
-      //cc1 = malloc(sizeof(double) * nrows * nrows); 
-      //starttime = MPI_Wtime();
-      
-      
       /* Insert your master code here to store the product into cc1 */
       endtime = MPI_Wtime();
       printf("%f\n",(endtime - starttime));
       cc2  = malloc(sizeof(double) * nrows * nrows);
       mmult(cc2, aa, nrows, ncols, bb, ncols, nrows);
       compare_matrices(cc2, cc1, nrows, nrows);
-      
     } else {
       // Slave Code goes here
     }
   } else {
     fprintf(stderr, "Usage matrix_times_vector <size>\n");
   }
+  
   MPI_Finalize();
   return 0;
 }
