@@ -1,6 +1,8 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <unistd.h>
+//testing 
+
 int main (int argc, char* argv[]) {
   int myid, numprocs;
   char me[255];
